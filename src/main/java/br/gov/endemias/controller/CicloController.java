@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 
 @RestController
-@RequestMapping("/ciclos")
+@RequestMapping("/api/v1/ciclos")
 @RequiredArgsConstructor
 public class CicloController {
     

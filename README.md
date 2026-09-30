@@ -29,7 +29,7 @@ O ecossistema **SISVETOR** é composto por três repositórios integrados:
 ```mermaid
 graph TD
     A[📱 SISVETOR - Mobile / Campo<br>App do Agente de Endemias - ACE] -->|HTTP / REST - JWT| C[⚙️ SISVETOR - core<br>Backend & API REST Spring Boot]
-    B[🖥️ SISVETOR - Web<br>Painel de Gestão e Supervisão] -->|HTTP / REST - JWT| C
+    B[🖥️ SISVETOR - Web<br>Painel de Gestão e Supervisão] -->|HTTP / REST - cookies HttpOnly| C
     C --> D[(🗄️ PostgreSQL Database<br>Schema relacional + Flyway)]
 ```
 
@@ -49,7 +49,7 @@ graph TD
 
 ### 👥 Gestão de Agentes e Usuários
 - Cadastro de agentes com matrícula, CPF e papéis hierárquicos: `CAMPO` (ACE), `SUPERVISOR` e `COORDENADOR`.
-- Controle de acesso baseado em papéis (RBAC) e autenticação stateless com tokens JWT.
+- Controle de acesso baseado em papéis (RBAC), JWT para Android e cookies HttpOnly para o web. Os fluxos de login, renovação e CSRF estão em [AUTENTICACAO.md](AUTENTICACAO.md).
 
 ### 📅 Ciclos de Trabalho e Planejamento
 - Acompanhamento dos ciclos anuais/bimestrais de visitação com controle de datas de início/fim e status de conclusão.
@@ -148,4 +148,3 @@ A API estará disponível por padrão em `http://localhost:8080`.
 ## 📄 Licença
 
 Este projeto é desenvolvido para fins de modernização do setor de saúde pública municipal. Consulte o arquivo `LICENSE` para maiores detalhes sobre os termos de uso.
-

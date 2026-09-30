@@ -1,7 +1,9 @@
 package br.gov.endemias.config.security;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,7 +17,8 @@ import br.gov.endemias.domain.entity.User;
 
 @Component
 public class TokenConfig {
-    
+    public static final long ACCESS_TOKEN_SECONDS = Duration.ofMinutes(15).toSeconds();
+
     private final String jwtSecret;
 
     public TokenConfig(@Value("${JWT_SECRET}") String jwtSecret) {
@@ -25,15 +28,17 @@ public class TokenConfig {
         this.jwtSecret = jwtSecret;
     }
 
-    public String generateToken(User user) {
+    public String generateToken(User user, UUID sessionId) {
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
+        Instant now = Instant.now();
 
         return JWT.create()
                 .withClaim("userId", user.getId())
                 .withClaim("role", user.getRole().name())
+                .withClaim("sid", sessionId.toString())
                 .withSubject(user.getAgente().getCpf())
-                .withExpiresAt(Instant.now().plusSeconds(86400))
-                .withIssuedAt(Instant.now())
+                .withExpiresAt(now.plusSeconds(ACCESS_TOKEN_SECONDS))
+                .withIssuedAt(now)
                 .sign(algorithm);
     }
 
@@ -45,10 +50,13 @@ public class TokenConfig {
                     .build()
                     .verify(token);
 
+            String sessionClaim = decoded.getClaim("sid").asString();
+
             return Optional.of(JWTUserData.builder()
                     .userId(decoded.getClaim("userId").asLong())
                     .cpf(decoded.getSubject())
                     .role(decoded.getClaim("role").asString())
+                    .sessionId(sessionClaim == null ? null : UUID.fromString(sessionClaim))
                     .build());
         } catch (Exception e) {
             return Optional.empty();
