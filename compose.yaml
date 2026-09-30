@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-endemias}
+      POSTGRES_USER: ${POSTGRES_USER:-endemias}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-endemias}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-endemias}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no .env}
+      AUTH_WEB_ALLOWED_ORIGINS: ${AUTH_WEB_ALLOWED_ORIGINS:-http://localhost:5173}
+      AUTH_COOKIE_SECURE: "false"
+      BOOTSTRAP_COORDINATOR_ENABLED: ${BOOTSTRAP_COORDINATOR_ENABLED:-false}
+      BOOTSTRAP_COORDINATOR_NOME: ${BOOTSTRAP_COORDINATOR_NOME:-}
+      BOOTSTRAP_COORDINATOR_CPF: ${BOOTSTRAP_COORDINATOR_CPF:-}
+      BOOTSTRAP_COORDINATOR_MATRICULA: ${BOOTSTRAP_COORDINATOR_MATRICULA:-}
+      BOOTSTRAP_COORDINATOR_EMAIL: ${BOOTSTRAP_COORDINATOR_EMAIL:-}
+      BOOTSTRAP_COORDINATOR_PASSWORD: ${BOOTSTRAP_COORDINATOR_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "/app/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  postgres_data:

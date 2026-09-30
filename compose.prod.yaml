@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-endemias}
+      POSTGRES_USER: ${POSTGRES_USER:-endemias}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_CONFIG_IMPORT: configtree:/run/secrets/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-endemias}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-endemias}
+      AUTH_WEB_ALLOWED_ORIGINS: ${AUTH_WEB_ALLOWED_ORIGINS:?Defina AUTH_WEB_ALLOWED_ORIGINS no .env}
+      AUTH_COOKIE_SECURE: "true"
+      BOOTSTRAP_COORDINATOR_ENABLED: ${BOOTSTRAP_COORDINATOR_ENABLED:-false}
+      BOOTSTRAP_COORDINATOR_NOME: ${BOOTSTRAP_COORDINATOR_NOME:-}
+      BOOTSTRAP_COORDINATOR_CPF: ${BOOTSTRAP_COORDINATOR_CPF:-}
+      BOOTSTRAP_COORDINATOR_MATRICULA: ${BOOTSTRAP_COORDINATOR_MATRICULA:-}
+      BOOTSTRAP_COORDINATOR_EMAIL: ${BOOTSTRAP_COORDINATOR_EMAIL:-}
+      BOOTSTRAP_COORDINATOR_PASSWORD: ${BOOTSTRAP_COORDINATOR_PASSWORD:-}
+    secrets:
+      - source: db_password
+        target: spring.datasource.password
+      - source: jwt_secret
+        target: JWT_SECRET
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "/app/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  postgres_data:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
+  jwt_secret:
+    file: ./secrets/JWT_SECRET

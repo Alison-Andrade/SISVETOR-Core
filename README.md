@@ -3,7 +3,7 @@
 > **API REST e Núcleo de Processamento do Sistema Integrado de Vigilância e Controle de Vetores e Endemias (SISVETOR).**
 
 [![Java](https://img.shields.io/badge/Java-26-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Flyway](https://img.shields.io/badge/Flyway-CC0202?style=for-the-badge&logo=flyway&logoColor=white)](https://flywaydb.org/)
 [![JWT](https://img.shields.io/badge/JWT-Auth0-black?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
@@ -72,7 +72,7 @@ graph TD
 ## 🛠️ Tecnologias e Dependências
 
 - **Linguagem**: [Java 26](https://openjdk.org/)
-- **Framework**: [Spring Boot 4.0.6](https://spring.io/projects/spring-boot)
+- **Framework**: [Spring Boot 4.1.1](https://spring.io/projects/spring-boot)
   - `spring-boot-starter-webmvc` (Construção de APIs RESTful)
   - `spring-boot-starter-data-jpa` (Persistência e ORM com Hibernate)
   - `spring-boot-starter-security` (Segurança, Criptografia e RBAC)
@@ -86,6 +86,67 @@ graph TD
 ---
 
 ## ⚙️ Como Executar a Aplicação
+
+### Docker Compose: desenvolvimento
+
+É necessário ter Docker com o plugin Compose. O build usa Java 26 dentro da imagem, independentemente do JDK instalado no host.
+
+```bash
+cp .env.example .env
+```
+
+Preencha `POSTGRES_PASSWORD` e `JWT_SECRET` no `.env` com valores aleatórios próprios. O segredo JWT deve ter pelo menos 32 caracteres. Ajuste `AUTH_WEB_ALLOWED_ORIGINS` para a origem exata do frontend local, sem barra final; se houver várias origens, separe por vírgula. Depois execute:
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f api
+```
+
+A API responde em `http://localhost:8080` e o PostgreSQL em `localhost:5433` por padrão. Ambas as portas ficam vinculadas ao loopback. O endpoint público `GET /api/v1/actuator/health` informa a saúde da API. O banco inicia antes da API, que executa as migrations Flyway. Para parar sem apagar os dados:
+
+```bash
+docker compose down
+```
+
+Os dados ficam no volume nomeado `postgres_data`. `docker compose down -v` remove esse volume e seus dados.
+
+O Dockerfile compila o JAR com `-DskipTests`. Para executar os testes separadamente com Java 26, use:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/workspace -w /workspace maven:3.9.16-eclipse-temurin-26-noble mvn -B -Dmaven.repo.local=/tmp/m2 test
+```
+
+### Docker Compose: produção
+
+O arquivo `compose.prod.yaml` é independente do Compose de desenvolvimento. Configure `AUTH_WEB_ALLOWED_ORIGINS` no `.env` com a origem HTTPS exata do frontend e crie os secrets locais antes de iniciar:
+
+```bash
+mkdir -p secrets
+chmod 700 secrets
+openssl rand -hex 32 | tr -d '\n' > secrets/db_password
+openssl rand -hex 32 | tr -d '\n' > secrets/JWT_SECRET
+chmod 644 secrets/db_password secrets/JWT_SECRET
+docker compose -f compose.prod.yaml up -d --build
+docker compose -f compose.prod.yaml ps
+docker compose -f compose.prod.yaml logs -f api
+```
+
+O PostgreSQL de produção não publica porta. A API escuta apenas em `127.0.0.1:8080` no host, para encaminhamento por um proxy HTTPS externo. Configure o proxy para preservar o host e encaminhar `/api/v1/` à API. Cookies web usam `Secure`, `HttpOnly` e `SameSite=Lax`; o frontend deve usar `credentials: "include"` e as rotas CSRF descritas em [AUTENTICACAO.md](AUTENTICACAO.md). O Compose monta os arquivos `secrets/db_password` e `secrets/JWT_SECRET` como secrets; o Spring lê os arquivos montados por `configtree:`. Mantenha o proxy, frontend e API no mesmo site para o fluxo de cookies. Use HTTPS no acesso público.
+
+Para parar e preservar o banco:
+
+```bash
+docker compose -f compose.prod.yaml down
+```
+
+O `.env` e `secrets/` ficam fora do Git. O diretório `secrets/` com permissão `700` impede o acesso de outros usuários do host; os arquivos precisam ter leitura (`644`) porque o Compose local os monta no container e a API executa sem privilégios. Não compartilhe os valores desses arquivos. Para testar os arquivos Compose sem iniciar serviços, use `docker compose config -q` ou `docker compose -f compose.prod.yaml config -q` após configurar o ambiente.
+
+### Coordenador inicial
+
+O bootstrap fica desativado por padrão nos dois ambientes. Somente na primeira inicialização, defina `BOOTSTRAP_COORDINATOR_ENABLED=true` e preencha `BOOTSTRAP_COORDINATOR_NOME`, `BOOTSTRAP_COORDINATOR_CPF`, `BOOTSTRAP_COORDINATOR_MATRICULA`, `BOOTSTRAP_COORDINATOR_EMAIL` e `BOOTSTRAP_COORDINATOR_PASSWORD` no `.env`. A senha precisa ter pelo menos 12 caracteres. Depois de criar o coordenador, volte a opção para `false`, remova a senha do `.env` e recrie a API com `docker compose up -d --force-recreate api` (acrescente `-f compose.prod.yaml` em produção). O login usa `POST /api/v1/auth/login` para Android e `POST /api/v1/auth/web/login` para web.
+
+### Executar sem Docker
 
 ### Pré-requisitos
 - **JDK 26** instalado e configurado nas variáveis de ambiente.

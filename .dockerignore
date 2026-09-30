@@ -1,0 +1,13 @@
+.git
+.gitignore
+.dockerignore
+.env
+.env.*
+secrets/
+target/
+.vscode/
+.idea/
+*.log
+*.jks
+*.keystore
+*.p12
