@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import br.gov.endemias.domain.entity.Lado;
-import br.gov.endemias.dto.LadoResponse;
 
 public interface LadoRepository extends JpaRepository<Lado, Long> {
     boolean existsByQuarteiraoIdAndNumero(Long quarteiraoId, Integer numero);
@@ -17,7 +16,7 @@ public interface LadoRepository extends JpaRepository<Lado, Long> {
 
     Optional<Lado> findFirstByQuarteiraoIdOrderByNumeroDesc(Long quarteiraoId);
 
-    List<LadoResponse> findAllByQuarteiraoId(Long quarteiraoId);
+    List<Lado> findAllByQuarteiraoIdOrderByNumeroAsc(Long quarteiraoId);
     
     List<Lado> findAllDetalhadoByQuarteiraoId(Long quarteiraoId);
 

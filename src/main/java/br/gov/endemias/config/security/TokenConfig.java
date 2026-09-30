@@ -16,15 +16,21 @@ import br.gov.endemias.domain.entity.User;
 @Component
 public class TokenConfig {
     
-    @Value("${JWT_SECRET:secret}")
-    private String jwtSecret;
+    private final String jwtSecret;
+
+    public TokenConfig(@Value("${JWT_SECRET}") String jwtSecret) {
+        if (jwtSecret.isBlank() || jwtSecret.length() < 32) {
+            throw new IllegalArgumentException("JWT_SECRET deve conter pelo menos 32 caracteres.");
+        }
+        this.jwtSecret = jwtSecret;
+    }
 
     public String generateToken(User user) {
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
 
         return JWT.create()
                 .withClaim("userId", user.getId())
-                .withClaim("role", user.getRole())
+                .withClaim("role", user.getRole().name())
                 .withSubject(user.getAgente().getCpf())
                 .withExpiresAt(Instant.now().plusSeconds(86400))
                 .withIssuedAt(Instant.now())

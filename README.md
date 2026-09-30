@@ -85,32 +85,6 @@ graph TD
 
 ---
 
-## 📂 Estrutura do Projeto
-
-```text
-src/main/java/br/gov/endemias/
-├── config/                  # Configurações de segurança, JWT e CORS
-│   └── security/            # SecurityConfig, SecurityFilter, TokenConfig, etc.
-├── controller/              # Controllers REST da API (/api/v1/...)
-│   ├── AgenteController.java
-│   ├── AreaController.java
-│   ├── AuthController.java
-│   ├── CicloController.java
-│   ├── ImovelController.java
-│   ├── LadoController.java
-│   ├── LocalidadeController.java
-│   ├── QuarteiraoController.java
-│   └── TratamentoController.java
-├── domain/                  # Entidades JPA e Enums do domínio
-│   ├── entity/              # Agente, Area, Ciclo, Imovel, Visita, Tratamento, etc.
-│   └── enums/               # StatusVisita, TipoDeposito, TipoImovel, FuncaoAgente, etc.
-├── dto/                     # Data Transfer Objects (Requests e Responses)
-├── repository/              # Repositórios Spring Data JPA
-└── service/                 # Camada de regras de negócio
-```
-
----
-
 ## ⚙️ Como Executar a Aplicação
 
 ### Pré-requisitos

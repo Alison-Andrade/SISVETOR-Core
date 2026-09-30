@@ -5,12 +5,28 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErroResponse> tratarAutenticacao(AuthenticationException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErroResponse(
+            LocalDateTime.now(), HttpStatus.UNAUTHORIZED.value(), "Não autorizado",
+            List.of("Credenciais inválidas ou conta inativa.")));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErroResponse> tratarAcessoNegado(AccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErroResponse(
+            LocalDateTime.now(), HttpStatus.FORBIDDEN.value(), "Acesso negado",
+            List.of("Você não tem permissão para executar esta operação.")));
+    }
     
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

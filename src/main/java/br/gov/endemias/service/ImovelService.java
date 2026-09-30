@@ -32,23 +32,30 @@ public class ImovelService {
         atribuirLadoOuLocalidade(imovel, request.ladoId(), request.localidadeId());
 
         processarNumeroSms(imovel, request.placa(), request.numeroSms(), request.ladoId(), request.localidadeId());
-        processarPlacaESequencia(imovel, request.placa(), request.ladoId(), imovel.getPlaca());
+        processarPlacaESequencia(imovel, request.placa(), request.ladoId(), request.localidadeId(), null);
 
         if (request.ordem() != null) {
             imovel.setOrdem(request.ordem());
-            reordenarImoveis(request.ordem());
+            if (request.ladoId() != null) {
+                imovelRepository.reordenarImoveisNoLado(request.ladoId(), request.ordem());
+            } else {
+                imovelRepository.reordenarImoveisNaLocalidade(request.localidadeId(), request.ordem());
+            }
         } else {
-            imovel.setOrdem(imovelRepository
-                .findFirstByLadoIdOrderByOrdemDesc(imovel.getLado().getId())
-                .map(imovelEntity -> imovelEntity.getOrdem())
-                .orElse(0) + 1);
+            Integer ultimaOrdem = request.ladoId() != null
+                ? imovelRepository.findFirstByLadoIdOrderByOrdemDesc(request.ladoId())
+                    .map(Imovel::getOrdem).orElse(0)
+                : imovelRepository.findFirstByLocalidadeIdOrderByOrdemDesc(request.localidadeId())
+                    .map(Imovel::getOrdem).orElse(0);
+            imovel.setOrdem(ultimaOrdem + 1);
         }
 
         return ImovelResponse.fromEntity(imovelRepository.save(imovel));
     }
 
     public List<ImovelResponse> listarPorLado(Long ladoId) {
-        return imovelRepository.findAllByLadoId(ladoId);
+        return imovelRepository.findAllByLadoIdOrderByOrdemAsc(ladoId)
+            .stream().map(ImovelResponse::fromEntity).toList();
     }
 
     public List<Imovel> listarPorLadoIdIn(List<Long> ladoIdList) {
@@ -71,7 +78,7 @@ public class ImovelService {
         atribuirLadoOuLocalidade(imovel, request.ladoId(), request.localidadeId());
 
         processarNumeroSms(imovel, request.placa(), request.numeroSms(), ladoId, localidadeId);
-        processarPlacaESequencia(imovel, request.placa(), ladoId, placaAntiga);
+        processarPlacaESequencia(imovel, request.placa(), ladoId, localidadeId, placaAntiga);
         
         imovel.setNumeroSms(request.numeroSms() != null ? request.numeroSms() : imovel.getNumeroSms());
         imovel.setPlaca(request.placa() != null ? request.placa() : imovel.getPlaca());
@@ -134,26 +141,29 @@ public class ImovelService {
                 imovel.setNumeroSms(novoNumeroSms);
             }
         } else {
-            imovelRepository.abrirEspacoParaNovoImovel(ladoId, numeroSmsRequest);
+            if (numeroSmsRequest != null) {
+                if (ladoId != null) {
+                    imovelRepository.abrirEspacoParaNovoImovel(ladoId, numeroSmsRequest);
+                } else {
+                    imovelRepository.abrirEspacoParaNovoImovelNaLocalidade(localidadeId, numeroSmsRequest);
+                }
+            }
             imovel.setNumeroSms(numeroSmsRequest);
         }
     }
 
-    private void processarPlacaESequencia(Imovel imovel, String placaRequest, Long ladoId, String placaAntiga) {
+    private void processarPlacaESequencia(Imovel imovel, String placaRequest, Long ladoId, Long localidadeId, String placaAntiga) {
         if (placaRequest != null) {
             imovel.setPlaca(placaRequest);
 
             boolean placaMudou = !placaRequest.equals(placaAntiga);
 
             if (placaMudou) {
-                boolean jaExistePlaca = imovelRepository.existsByPlacaAndLadoId(placaRequest, ladoId);
-                Integer sequencia = 0;
-                if (jaExistePlaca) {
-                    sequencia = imovelRepository
-                        .findFirstByPlacaAndLadoIdOrderBySequenciaDesc(placaRequest, ladoId)
-                        .map(imovelEntity -> imovelEntity.getSequencia())
-                        .orElse(0) + 1;
-                }
+                Integer sequencia = (ladoId != null
+                    ? imovelRepository.findFirstByPlacaAndLadoIdOrderBySequenciaDesc(placaRequest, ladoId)
+                    : imovelRepository.findFirstByPlacaAndLocalidadeIdOrderBySequenciaDesc(placaRequest, localidadeId))
+                    .map(ultimo -> ultimo.getSequencia() == null ? 1 : ultimo.getSequencia() + 1)
+                    .orElse(0);
                 imovel.setSequencia(sequencia);
             }
         } else {
@@ -161,11 +171,5 @@ public class ImovelService {
             imovel.setSequencia(null);
         }
     }
-
-    private void reordenarImoveis(Integer ordem) {
-        imovelRepository.reordenarImoveis(ordem);
-    }
-
-
 
 }

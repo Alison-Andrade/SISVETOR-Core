@@ -3,14 +3,16 @@ package br.gov.endemias.controller;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.gov.endemias.config.security.TokenConfig;
 import br.gov.endemias.domain.entity.User;
 import br.gov.endemias.dto.AuthResponse;
 import br.gov.endemias.dto.LoginRequest;
-import br.gov.endemias.dto.UserRequest;
+import br.gov.endemias.dto.CadastroPublicoRequest;
 import br.gov.endemias.dto.UserResponse;
 import br.gov.endemias.service.UserService;
 import jakarta.validation.Valid;
@@ -40,8 +42,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public UserResponse register(@RequestBody @Valid UserRequest request) {
-        return userService.cadastrar(request);
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse register(@RequestBody @Valid CadastroPublicoRequest request) {
+        return userService.cadastrarPublico(request);
     }
     
 

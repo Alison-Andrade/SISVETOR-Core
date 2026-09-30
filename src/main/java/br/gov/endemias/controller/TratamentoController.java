@@ -3,6 +3,7 @@ package br.gov.endemias.controller;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,8 +27,9 @@ public class TratamentoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TratamentoResponse cadastrar(@RequestBody @Valid TratamentoRequest request) {
-        return tratamentoService.cadastrar(request);
+    public TratamentoResponse cadastrar(@RequestBody @Valid TratamentoRequest request,
+                                       Authentication autenticacao) {
+        return tratamentoService.cadastrar(request, autenticacao);
     }
 
     @GetMapping

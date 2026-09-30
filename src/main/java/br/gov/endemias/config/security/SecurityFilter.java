@@ -1,12 +1,7 @@
 package br.gov.endemias.config.security;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -16,40 +11,37 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import br.gov.endemias.domain.entity.User;
+import br.gov.endemias.repository.UserRepository;
 
 @Component
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
     
     private final TokenConfig tokenConfig;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        String authrizationHeader = request.getHeader("Authorization");
+        String authorizationHeader = request.getHeader("Authorization");
 
-        if (Strings.isNotBlank(authrizationHeader) && authrizationHeader.startsWith("Bearer ")) {
-            String token = authrizationHeader.substring("Bearer ".length());
-            Optional<JWTUserData> optUser = tokenConfig.validateToken(token);
-
-            if (optUser.isPresent()) {
-                JWTUserData userData = optUser.get();
-
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority(userData.role());
-                List<SimpleGrantedAuthority> authorities = List.of(authority);
-
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userData,
-                    null,
-                    authorities
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-            filterChain.doFilter(request, response);
-        } else {
-            filterChain.doFilter(request, response);
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String token = authorizationHeader.substring("Bearer ".length());
+            tokenConfig.validateToken(token)
+                .filter(data -> data.userId() != null && data.cpf() != null)
+                .flatMap(data -> userRepository.findByIdWithAgente(data.userId())
+                    .filter(User::isEnabled)
+                    .filter(user -> data.cpf().equals(user.getAgente().getCpf())))
+                .ifPresent(user -> {
+                    JWTUserData currentUser = new JWTUserData(
+                        user.getId(), user.getAgente().getCpf(), user.getRole().name());
+                    UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(currentUser, null, user.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                });
         }
+        filterChain.doFilter(request, response);
     }
 }

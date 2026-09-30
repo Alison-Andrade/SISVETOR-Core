@@ -32,7 +32,7 @@ public class AreaService {
     }
 
     public AreaResponse buscarPorId(Long id) {
-        return AreaResponse.fromEntity(areaRepository.findById(id).get());
+        return AreaResponse.fromEntity(buscarEntityPorId(id));
     }
 
     public List<AreaResponse> listar() {

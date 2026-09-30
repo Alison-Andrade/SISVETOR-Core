@@ -31,24 +31,13 @@ public class QuarteiraoService {
         Quarteirao quarteirao = request.toEntity();
 
         if (request.numero() != null) {
-            boolean jaExiste = quarteiraoRepository.existsByNumeroAndLocalidadeId(
-                    request.numero(),
-                    request.localidadeId()
-                );
-
-            if (jaExiste) {
-                int maiorSequenciaAtual = quarteiraoRepository
-                        .findFirstByNumeroAndLocalidadeIdOrderBySequenciaDesc(
-                            request.numero(),
-                            request.localidadeId()
-                        )
-                        .map(q -> q.getSequencia() != null ? q.getSequencia() : 0)
-                        .orElse(0);
-
-                quarteirao.setSequencia(maiorSequenciaAtual + 1);
-            } else {
-                quarteirao.setSequencia(0);
-            }
+            int proximaSequencia = quarteiraoRepository
+                .findFirstByNumeroAndLocalidadeIdOrderBySequenciaDesc(
+                    request.numero(), request.localidadeId()
+                )
+                .map(q -> q.getSequencia() == null ? 1 : q.getSequencia() + 1)
+                .orElse(0);
+            quarteirao.setSequencia(proximaSequencia);
         }
 
         if (request.localidadeId() != null) {
@@ -66,7 +55,8 @@ public class QuarteiraoService {
     }
 
     public List<QuarteiraoResponse> listarPorLocalidade(Long localidadeId) {
-        return quarteiraoRepository.findAllByLocalidadeId(localidadeId);
+        return quarteiraoRepository.findAllByLocalidadeIdOrderByNumeroAscSequenciaAsc(localidadeId)
+            .stream().map(QuarteiraoResponse::fromEntity).toList();
     }
 
     public QuarteiraoResponse buscarPorId(Long id) {

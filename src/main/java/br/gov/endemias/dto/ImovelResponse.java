@@ -25,7 +25,7 @@ public record ImovelResponse(
             imovel.getNumeroCaes(),
             imovel.getNumeroGatos(),
             imovel.getTipo(),
-            imovel.getLado().getId(),
+            imovel.getLado() != null ? imovel.getLado().getId() : null,
             imovel.getLocalidade() != null ? imovel.getLocalidade().getId() : null
         );
     }

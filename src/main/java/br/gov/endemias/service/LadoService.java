@@ -53,7 +53,8 @@ public class LadoService {
     }
 
     public List<LadoResponse> listarPorQuarteirao(Long quarteiraoId) {
-        return ladoRepository.findAllByQuarteiraoId(quarteiraoId);
+        return ladoRepository.findAllByQuarteiraoIdOrderByNumeroAsc(quarteiraoId)
+            .stream().map(LadoResponse::fromEntity).toList();
     }
 
     public List<LadoDetalhadoResponse> listarDetalhadoPorQuarteirao(Long quarteiraoId) {
@@ -106,4 +107,3 @@ public class LadoService {
     }
 
 }
-

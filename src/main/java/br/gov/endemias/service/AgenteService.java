@@ -12,6 +12,7 @@ import br.gov.endemias.dto.AgenteResponse;
 import br.gov.endemias.exception.RegraNegocioException;
 import br.gov.endemias.exception.ResourceNotFoundException;
 import br.gov.endemias.repository.AgenteRepository;
+import br.gov.endemias.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class AgenteService {
     
     private final AgenteRepository agenteRepository;
+    private final UserRepository userRepository;
 
 
     public AgenteResponse cadastrar(AgenteRequest request) {
@@ -58,6 +60,10 @@ public class AgenteService {
         }
 
         FuncaoAgente funcaoAtual = agente.getFuncao();
+
+        if (request.funcao() != null && request.funcao() != funcaoAtual && userRepository.existsByAgenteId(id)) {
+            throw new RegraNegocioException("A função de um agente com conta precisa ser alterada junto com o papel do usuário.");
+        }
 
         request.preencher(agente);
 
