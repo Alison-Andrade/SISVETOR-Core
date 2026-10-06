@@ -22,37 +22,41 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 
 @RestController
-@RequestMapping("api/v1/lados")
+@RequestMapping("/api/v1/lados")
 @RequiredArgsConstructor
 public class LadoController {
 
     private final LadoService ladoService;
-    
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LadoResponse cadastrar(@RequestBody LadoRequest request) {
         return ladoService.cadastrar(request);
     }
 
-    @GetMapping("/{quarteiraoId}")
+    @GetMapping("/quarteirao/{quarteiraoId}")
+    @ResponseStatus(HttpStatus.OK)
     public List<LadoResponse> listar(@PathVariable Long quarteiraoId) {
         return ladoService.listarPorQuarteirao(quarteiraoId);
     }
 
     @GetMapping("/{id}")
-    public LadoResponse buscarPorId(Long id) {
+    @ResponseStatus(HttpStatus.OK)
+    public LadoResponse buscarPorId(@PathVariable Long id) {
         // return ladoService.buscarPorId(id);
         throw new RuntimeException("TO-DO");
     }
 
     @PutMapping("/{id}")
-    public LadoResponse atualizar(Long id, LadoRequest request) {
+    @ResponseStatus(HttpStatus.OK)
+    public LadoResponse atualizar(@PathVariable Long id, @RequestBody LadoRequest request) {
         // return ladoService.atualizar(id, request);
         throw new RuntimeException("TO-DO");
     }
-    
+
     @DeleteMapping("/{id}")
-    public void deletar(Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletar(@PathVariable Long id) {
         ladoService.deletar(id);
     }
 

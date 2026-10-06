@@ -52,11 +52,5 @@ public class Visita {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ciclo_id")
     private Ciclo ciclo;
-
-    @PrePersist
-    public void prePersist() {
-        this.dataVisita = LocalDateTime.now();
-    }
-
     
 }
